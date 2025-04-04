@@ -38,8 +38,6 @@ Application de gestion de stages pour les étudiants et les entreprises.
 
 ## Auteurs
 
-- [Votre nom]
+- Rayan
 
-## Licence
 
-Ce projet est sous licence MIT.
