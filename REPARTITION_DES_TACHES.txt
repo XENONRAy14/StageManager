@@ -1,0 +1,47 @@
+RÉPARTITION DES TÂCHES - PROJET STAGEMANAGER
+
+PRÉSENTATION DU PROJET
+StageManager est une application de gestion des stages pour les étudiants et les entreprises, développée dans le cadre d'un projet de groupe. Ce document présente la répartition des tâches entre les deux membres de l'équipe.
+
+ÉQUIPE
+- Rayan : Développement frontend et expérience utilisateur
+- Tadj : Développement backend et gestion des données
+
+RÉPARTITION DÉTAILLÉE DES TÂCHES
+
+Rayan
+- Interface utilisateur et expérience utilisateur
+  • Conception et implémentation du tableau de bord (DashboardForm)
+  • Amélioration de l'ergonomie de l'interface utilisateur
+  • Création des formulaires de navigation et des menus
+  • Implémentation des fonctionnalités de contact des étudiants
+  • Stylisation des composants visuels (boutons, panneaux, etc.)
+  • Tests d'utilisabilité et corrections des problèmes d'interface
+
+- Documentation et déploiement
+  • Création du README et de la documentation utilisateur
+  • Mise en place du dépôt GitHub
+  • Gestion des versions et des mises à jour
+
+Tadj
+- Gestion des données et backend
+  • Implémentation de la connexion à Firebase
+  • Développement du système d'authentification
+  • Création des modèles de données (Student, User, Stage)
+  • Implémentation de l'importation de données Excel
+  • Développement des fonctionnalités de recherche et de filtrage
+  • Gestion de la persistance des données
+
+- Fonctionnalités métier
+  • Implémentation de la logique de gestion des stages
+  • Développement des formulaires de détails des stages
+  • Création du système d'export des données
+  • Gestion des erreurs et des exceptions
+
+FONCTIONNALITÉS DÉVELOPPÉES EN COLLABORATION
+- Intégration : Connexion entre l'interface utilisateur et les fonctionnalités backend
+- Tests : Validation du fonctionnement global de l'application
+- Débogage : Résolution des problèmes identifiés lors des tests
+
+CONCLUSION
+Ce projet a permis de mettre en pratique une collaboration efficace entre les membres de l'équipe, chacun apportant ses compétences spécifiques pour créer une application fonctionnelle et ergonomique. La répartition des tâches a été équilibrée, permettant à chaque membre de contribuer de manière significative au résultat final.
