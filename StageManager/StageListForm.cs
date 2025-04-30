@@ -291,7 +291,7 @@ namespace StageManager
                     {
                         if (student != null)
                         {
-                            dgvStages.Rows.Add(
+                            int rowIndex = dgvStages.Rows.Add(
                                 student.NomEtudiant ?? "",
                                 student.PrenomEtudiant ?? "",
                                 student.Classe ?? "",
@@ -300,6 +300,8 @@ namespace StageManager
                                 student.PrenomContact ?? "",
                                 student.TelephoneContact ?? ""
                             );
+                            // Associer l'objet Stage à la ligne pour pouvoir y accéder plus tard
+                            dgvStages.Rows[rowIndex].Tag = student;
                         }
                     }
                 }
@@ -328,56 +330,88 @@ namespace StageManager
 
         private void BtnSearch_Click(object sender, EventArgs e)
         {
-            string searchText = txtSearch.Text.ToLower();
-            if (searchText == "rechercher...") searchText = "";
-
-            foreach (DataGridViewRow row in dgvStages.Rows)
+            try
             {
-                bool visible = false;
-                Stage stage = (Stage)row.Tag;
+                string searchText = txtSearch.Text.ToLower();
+                if (searchText == "rechercher...") searchText = "";
 
-                switch (cmbFilter.SelectedIndex)
+                foreach (DataGridViewRow row in dgvStages.Rows)
                 {
-                    case 0: // Tous
-                        visible = false;
-                        for (int i = 0; i < row.Cells.Count; i++)
+                    bool visible = true; // Par défaut, montrer toutes les lignes si aucun texte de recherche
+
+                    if (!string.IsNullOrEmpty(searchText))
+                    {
+                        visible = false; // Cacher par défaut si un texte de recherche est spécifié
+                        
+                        // Si aucun filtre spécifique n'est sélectionné, rechercher dans toutes les colonnes
+                        if (cmbFilter.SelectedIndex == 0)
                         {
-                            if (row.Cells[i].Value?.ToString().ToLower().Contains(searchText) ?? false)
+                            for (int i = 0; i < row.Cells.Count; i++)
                             {
-                                visible = true;
-                                break;
+                                if (row.Cells[i].Value?.ToString().ToLower().Contains(searchText) ?? false)
+                                {
+                                    visible = true;
+                                    break;
+                                }
                             }
                         }
-                        break;
-                    case 1: // Par nom
-                        visible = (stage.NomEtudiant + " " + stage.PrenomEtudiant).ToLower().Contains(searchText);
-                        break;
-                    case 2: // Par entreprise
-                        visible = stage.RaisonSociale.ToLower().Contains(searchText);
-                        break;
-                    case 3: // Par ville
-                        visible = stage.Ville.ToLower().Contains(searchText);
-                        break;
-                    case 4: // Par contact
-                        visible = stage.PrenomContact.ToLower().Contains(searchText);
-                        break;
-                }
+                        else
+                        {
+                            // Pour les filtres spécifiques, utiliser les valeurs des cellules plutôt que l'objet Stage
+                            switch (cmbFilter.SelectedIndex)
+                            {
+                                case 1: // Par nom
+                                    string nom = row.Cells["NomEtudiant"].Value?.ToString() ?? "";
+                                    string prenom = row.Cells["PrenomEtudiant"].Value?.ToString() ?? "";
+                                    visible = (nom + " " + prenom).ToLower().Contains(searchText);
+                                    break;
+                                case 2: // Par entreprise
+                                    visible = (row.Cells["RaisonSociale"].Value?.ToString() ?? "").ToLower().Contains(searchText);
+                                    break;
+                                case 3: // Par ville
+                                    visible = (row.Cells["Ville"].Value?.ToString() ?? "").ToLower().Contains(searchText);
+                                    break;
+                                case 4: // Par contact
+                                    visible = (row.Cells["PrenomContact"].Value?.ToString() ?? "").ToLower().Contains(searchText);
+                                    break;
+                            }
+                        }
+                    }
 
-                row.Visible = visible;
+                    row.Visible = visible;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Erreur lors de la recherche : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void BtnViewDetails_Click(object sender, EventArgs e)
         {
-            if (dgvStages.SelectedRows.Count > 0)
+            try
             {
-                Stage stage = (Stage)dgvStages.SelectedRows[0].Tag;
-                var detailsForm = new StageDetailsForm(stage);
-                detailsForm.ShowDialog();
+                if (dgvStages.SelectedRows.Count > 0)
+                {
+                    DataGridViewRow selectedRow = dgvStages.SelectedRows[0];
+                    if (selectedRow.Tag == null)
+                    {
+                        MessageBox.Show("Impossible de récupérer les informations de l'étudiant sélectionné.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                    
+                    Stage stage = (Stage)selectedRow.Tag;
+                    var detailsForm = new StageDetailsForm(stage);
+                    detailsForm.ShowDialog();
+                }
+                else
+                {
+                    MessageBox.Show("Veuillez sélectionner un élève.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("Veuillez sélectionner un élève.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"Erreur lors de l'affichage des détails : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
         
@@ -389,13 +423,32 @@ namespace StageManager
                 {
                     // Vérifier si la ligne sélectionnée a un objet Stage associé
                     DataGridViewRow selectedRow = dgvStages.SelectedRows[0];
+                    
+                    // Si la ligne n'a pas d'objet Stage associé, créer un objet Stage à partir des données de la ligne
+                    Stage stage;
                     if (selectedRow.Tag == null)
                     {
-                        MessageBox.Show("Impossible de récupérer les informations de l'étudiant sélectionné.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
+                        // Créer un nouvel objet Stage à partir des données de la ligne
+                        stage = new Stage
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            NomEtudiant = selectedRow.Cells["NomEtudiant"].Value?.ToString(),
+                            PrenomEtudiant = selectedRow.Cells["PrenomEtudiant"].Value?.ToString(),
+                            Classe = selectedRow.Cells["Classe"].Value?.ToString(),
+                            RaisonSociale = selectedRow.Cells["RaisonSociale"].Value?.ToString(),
+                            Ville = selectedRow.Cells["Ville"].Value?.ToString(),
+                            PrenomContact = selectedRow.Cells["PrenomContact"].Value?.ToString(),
+                            TelephoneContact = selectedRow.Cells["TelephoneContact"].Value?.ToString(),
+                            EmailContact = "email@example.com" // Valeur par défaut
+                        };
+                        
+                        // Associer l'objet Stage à la ligne pour les futures utilisations
+                        selectedRow.Tag = stage;
                     }
-
-                    Stage stage = (Stage)selectedRow.Tag;
+                    else
+                    {
+                        stage = (Stage)selectedRow.Tag;
+                    }
                     
                     // Créer un Student à partir des données de la ligne sélectionnée
                     var student = new Student
