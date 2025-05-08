@@ -10,86 +10,29 @@ namespace StageManager
     public partial class ContactForm : Form
     {
         // Données du formulaire
-        private readonly Student student;
+        private readonly Stage stage;
         private readonly User company;
-
-        // Contrôles de l'interface
-        private TextBox txtSubject;
-        private TextBox txtMessage;
-        private Button btnSend;
-        private Button btnCancel;
-        private Label lblSubject;
-        private Label lblMessage;
 
         /// <summary>
         /// Constructeur du formulaire de contact
         /// </summary>
-        /// <param name="student">L'étudiant à contacter</param>
-        /// <param name="company">L'entreprise qui envoie le message</param>
-        public ContactForm(Student student, User company)
+        /// <param name="stage">Le stage contenant les informations de l'étudiant à contacter</param>
+        /// <param name="company">L'entreprise qui contacte l'étudiant</param>
+        public ContactForm(Stage stage, User company = null)
         {
-            this.student = student;
+            this.stage = stage;
             this.company = company;
             InitializeComponent();
+
+            // Configuration des événements
+            btnBack.Click += (s, e) => this.Close();
+            btnSend.Click += BtnSend_Click;
+            
+            // Initialisation du formulaire
             InitializeForm();
         }
 
-        /// <summary>
-        /// Initialise les composants de l'interface utilisateur
-        /// </summary>
-        private void InitializeComponent()
-        {
-            // Création des contrôles
-            txtSubject = new TextBox();
-            txtMessage = new TextBox();
-            btnSend = new Button();
-            btnCancel = new Button();
-            lblSubject = new Label();
-            lblMessage = new Label();
 
-            // Configuration des labels
-            lblSubject.AutoSize = true;
-            lblSubject.Location = new System.Drawing.Point(12, 9);
-            lblSubject.Text = "Objet :";
-
-            lblMessage.AutoSize = true;
-            lblMessage.Location = new System.Drawing.Point(12, 48);
-            lblMessage.Text = "Message :";
-
-            // Configuration du champ Objet
-            txtSubject.Location = new System.Drawing.Point(12, 25);
-            txtSubject.Size = new System.Drawing.Size(360, 20);
-
-            // Configuration du champ Message
-            txtMessage.Location = new System.Drawing.Point(12, 64);
-            txtMessage.Multiline = true;
-            txtMessage.Size = new System.Drawing.Size(360, 200);
-            txtMessage.ScrollBars = ScrollBars.Vertical;
-
-            // Configuration du bouton Envoyer
-            btnSend.Location = new System.Drawing.Point(12, 270);
-            btnSend.Size = new System.Drawing.Size(170, 30);
-            btnSend.Text = "Envoyer";
-            btnSend.Click += btnSend_Click;
-
-            // Configuration du bouton Annuler
-            btnCancel.Location = new System.Drawing.Point(202, 270);
-            btnCancel.Size = new System.Drawing.Size(170, 30);
-            btnCancel.Text = "Annuler";
-            btnCancel.Click += btnCancel_Click;
-
-            // Configuration du formulaire
-            this.ClientSize = new System.Drawing.Size(384, 311);
-            this.Controls.AddRange(new Control[] { 
-                lblSubject, txtSubject, 
-                lblMessage, txtMessage, 
-                btnSend, btnCancel 
-            });
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
-            this.StartPosition = FormStartPosition.CenterParent;
-        }
 
         /// <summary>
         /// Initialise le contenu des champs du formulaire
@@ -97,31 +40,26 @@ namespace StageManager
         private void InitializeForm()
         {
             // Définit le titre du formulaire
-            this.Text = $"Contacter {student.PrenomEtudiant} {student.NomEtudiant}";
-
+            this.Text = $"Stage Manager - Contacter {stage.PrenomEtudiant} {stage.NomEtudiant}";
+            
+            // Affiche l'email de l'étudiant à contacter
+            lblContact.Text = stage.EmailEtudiant;
+            
             // Prérempli l'objet du message
-            txtSubject.Text = $"Stage - {company.CompanyName}";
-
+            txtSubject.Text = $"Stage - {stage.RaisonSociale}";
+            
             // Prérempli le message avec un template
-            txtMessage.Text = $"Bonjour {student.PrenomEtudiant},\n\n" +
-                          $"Je suis {company.CompanyName} et je souhaiterais vous proposer une opportunité de stage/alternance.\n\n" +
+            txtMessage.Text = $"Bonjour {stage.PrenomEtudiant},\n\n" +
+                          $"Je suis {stage.NomContact} de {stage.RaisonSociale} et je souhaiterais vous contacter concernant votre stage.\n\n" +
                           "Cordialement,\n" +
-                          $"{company.CompanyName}";
-        }
-
-        /// <summary>
-        /// Gère le clic sur le bouton Annuler
-        /// </summary>
-        private void btnCancel_Click(object sender, EventArgs e)
-        {
-            this.Close();
+                          $"{stage.NomContact}\n{stage.RaisonSociale}";
         }
 
         /// <summary>
         /// Gère le clic sur le bouton Envoyer
         /// Envoie le message à Firebase
         /// </summary>
-        private async void btnSend_Click(object sender, EventArgs e)
+        private async void BtnSend_Click(object sender, EventArgs e)
         {
             // Vérifie que les champs sont remplis
             if (string.IsNullOrWhiteSpace(txtSubject.Text))
@@ -144,19 +82,19 @@ namespace StageManager
             {
                 // Désactive les contrôles pendant l'envoi
                 btnSend.Enabled = false;
-                btnCancel.Enabled = false;
+                btnBack.Enabled = false;
                 this.Cursor = Cursors.WaitCursor;
 
                 // Crée l'objet message
                 var message = new
                 {
                     // Informations sur l'entreprise
-                    CompanyId = company.Email.Replace(".", ","),
-                    CompanyName = company.CompanyName,
+                    CompanyId = stage.RaisonSociale.Replace(".", ","),
+                    CompanyName = stage.RaisonSociale,
 
                     // Informations sur l'étudiant
-                    StudentId = student.Id,
-                    StudentName = $"{student.PrenomEtudiant} {student.NomEtudiant}",
+                    StudentId = stage.NomEtudiant + stage.PrenomEtudiant,
+                    StudentName = $"{stage.PrenomEtudiant} {stage.NomEtudiant}",
 
                     // Contenu du message
                     Subject = txtSubject.Text,
@@ -190,7 +128,7 @@ namespace StageManager
             {
                 // Réactive les contrôles
                 btnSend.Enabled = true;
-                btnCancel.Enabled = true;
+                btnBack.Enabled = true;
                 this.Cursor = Cursors.Default;
             }
         }

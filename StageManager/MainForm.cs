@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using System.Drawing;
 using FireSharp.Response;
 using Newtonsoft.Json;
+using System.Threading.Tasks;
 
 namespace StageManager
 {
@@ -16,24 +17,6 @@ namespace StageManager
         // L'utilisateur actuellement connecté (une entreprise)
         private readonly User currentUser;
 
-        // Contrôles de l'interface utilisateur
-        private ListView lstStudents;
-        private Button btnContact;
-        private Button btnRefresh;
-        private Button btnImport;
-        
-        // Contrôles pour le menu latéral et le contenu
-        private Panel sideMenu;
-        private Panel contentPanel;
-        private Panel headerPanel;
-        private Label lblHeader;
-        private Label lblUserInfo;
-        private Button btnDashboard;
-        private Button btnStageList;
-        private Button btnProfile;
-        private Button btnSettings;
-        private Button btnLogout;
-
         /// <summary>
         /// Constructeur du formulaire principal
         /// </summary>
@@ -42,8 +25,68 @@ namespace StageManager
         {
             currentUser = user;
             InitializeComponent();
-            InitializeListView();
-            LoadData(); // Charger les données immédiatement
+            
+            // Configuration après chargement pour s'assurer que les contrôles sont créés
+            this.Load += async (s, e) =>
+            {
+                // Initialisation des événements pour les boutons
+                if (Controls.Find("btnContact", true).Length > 0)
+                    ((Button)Controls.Find("btnContact", true)[0]).Click += BtnContact_Click;
+                    
+                if (Controls.Find("btnRefresh", true).Length > 0)
+                    ((Button)Controls.Find("btnRefresh", true)[0]).Click += BtnRefresh_Click;
+                    
+                if (Controls.Find("btnImport", true).Length > 0)
+                    ((Button)Controls.Find("btnImport", true)[0]).Click += BtnImport_Click;
+                    
+                if (Controls.Find("btnDashboard", true).Length > 0)
+                    ((Button)Controls.Find("btnDashboard", true)[0]).Click += BtnDashboard_Click;
+                    
+                if (Controls.Find("btnStageList", true).Length > 0)
+                    ((Button)Controls.Find("btnStageList", true)[0]).Click += BtnStageList_Click;
+                    
+                if (Controls.Find("btnProfile", true).Length > 0)
+                    ((Button)Controls.Find("btnProfile", true)[0]).Click += BtnProfile_Click;
+                    
+                if (Controls.Find("btnSettings", true).Length > 0)
+                    ((Button)Controls.Find("btnSettings", true)[0]).Click += BtnSettings_Click;
+                    
+                if (Controls.Find("btnLogout", true).Length > 0)
+                    ((Button)Controls.Find("btnLogout", true)[0]).Click += BtnLogout_Click;
+                
+                // Configuration de la ListView
+                if (Controls.Find("lstStudents", true).Length > 0)
+                {
+                    ListView lstStudents = (ListView)Controls.Find("lstStudents", true)[0];
+                    lstStudents.SelectedIndexChanged += LstStudents_SelectedIndexChanged;
+                    
+                    // Initialisation de la liste et chargement des données
+                    InitializeListView();
+                    
+                    // Vérification des données dans Firebase
+                    bool dataExists = await CheckFirebaseData();
+                    if (!dataExists)
+                    {
+                        DialogResult result = MessageBox.Show(
+                            "Aucune donnée trouvée dans Firebase. Voulez-vous ajouter des données de test ?",
+                            "Base de données vide",
+                            MessageBoxButtons.YesNo,
+                            MessageBoxIcon.Question);
+                            
+                        if (result == DialogResult.Yes)
+                        {
+                            await AddTestData();
+                        }
+                    }
+                    
+                    // Chargement des données
+                    LoadData();
+                }
+                
+                // Affichage des informations utilisateur
+                if (Controls.Find("lblUserInfo", true).Length > 0)
+                    ((Label)Controls.Find("lblUserInfo", true)[0]).Text = $"Bienvenue\n{currentUser.CompanyName}";
+            };
         }
 
         /// <summary>
@@ -51,6 +94,16 @@ namespace StageManager
         /// </summary>
         private void InitializeListView()
         {
+            // Récupération de la ListView par son nom
+            ListView lstStudents = null;
+            if (Controls.Find("lstStudents", true).Length > 0)
+                lstStudents = (ListView)Controls.Find("lstStudents", true)[0];
+            else
+            {
+                MessageBox.Show("Le contrôle ListView 'lstStudents' est introuvable.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            
             // Configuration de base de la ListView
             lstStudents.View = View.Details;
             lstStudents.FullRowSelect = true;
@@ -73,161 +126,7 @@ namespace StageManager
             lstStudents.OwnerDraw = false;
         }
 
-        /// <summary>
-        /// Initialise les composants de l'interface utilisateur
-        /// </summary>
-        private void InitializeComponent()
-        {
-            // Appliquer le thème moderne au formulaire
-            ModernTheme.ApplyFormStyle(this);
-            this.FormBorderStyle = FormBorderStyle.FixedSingle;
-            this.WindowState = FormWindowState.Maximized;
-            this.MaximizeBox = true;
-            this.MinimumSize = new Size(1000, 600);
-            
-            // Création du menu latéral
-            sideMenu = ModernTheme.CreateSideMenu(220, this.ClientSize.Height);
-            
-            // Création des boutons du menu
-            btnDashboard = ModernTheme.CreateMenuButton("Tableau de bord");
-            btnStageList = ModernTheme.CreateMenuButton("Liste des stages");
-            btnProfile = ModernTheme.CreateMenuButton("Mon profil");
-            btnSettings = ModernTheme.CreateMenuButton("Paramètres");
-            
-            // Séparateur
-            Panel separator = new Panel
-            {
-                Height = 1,
-                Dock = DockStyle.Top,
-                BackColor = ModernTheme.PrimaryLightColor
-            };
-            
-            // Bouton de déconnexion en bas du menu
-            btnLogout = ModernTheme.CreateMenuButton("Déconnexion");
-            btnLogout.Dock = DockStyle.Bottom;
-            btnLogout.BackColor = ModernTheme.PrimaryDarkColor;
-            btnLogout.Click += BtnLogout_Click;
-            
-            // Informations utilisateur
-            lblUserInfo = new Label
-            {
-                Text = $"Connecté en tant que\n{currentUser.CompanyName}",
-                ForeColor = Color.White,
-                Font = new Font(ModernTheme.DefaultFont.FontFamily, 9),
-                TextAlign = ContentAlignment.MiddleCenter,
-                Dock = DockStyle.Bottom,
-                Height = 50,
-                BackColor = ModernTheme.PrimaryDarkColor
-            };
-            
-            // Ajout des contrôles au menu latéral
-            sideMenu.Controls.Add(btnLogout);
-            sideMenu.Controls.Add(lblUserInfo);
-            sideMenu.Controls.Add(btnSettings);
-            sideMenu.Controls.Add(btnProfile);
-            sideMenu.Controls.Add(btnStageList);
-            sideMenu.Controls.Add(btnDashboard);
-            
-            // Sélection par défaut
-            btnStageList.BackColor = ModernTheme.PrimaryColor;
-            
-            // Événements des boutons du menu
-            btnDashboard.Click += BtnDashboard_Click;
-            btnStageList.Click += BtnStageList_Click;
-            btnProfile.Click += BtnProfile_Click;
-            btnSettings.Click += BtnSettings_Click;
-            
-            // Création du panneau d'en-tête
-            headerPanel = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 60,
-                BackColor = ModernTheme.SurfaceColor
-            };
-            
-            // Titre de la page
-            lblHeader = new Label
-            {
-                Text = "Liste des stages",
-                Font = ModernTheme.TitleFont,
-                ForeColor = ModernTheme.TextColor,
-                Location = new Point(20, 15),
-                AutoSize = true
-            };
-            
-            headerPanel.Controls.Add(lblHeader);
-            
-            // Création du panneau de contenu
-            contentPanel = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = ModernTheme.BackgroundColor,
-                Padding = new Padding(20)
-            };
-            
-            // Création des contrôles
-            lstStudents = new ListView
-            {
-                Dock = DockStyle.Fill
-            };
-            
-            // Panel pour les boutons
-            Panel buttonPanel = new Panel
-            {
-                Dock = DockStyle.Bottom,
-                Height = 60,
-                BackColor = ModernTheme.SurfaceColor
-            };
-            
-            // Configuration des boutons
-            btnContact = new Button
-            {
-                Size = new System.Drawing.Size(180, 36),
-                Location = new Point(20, 12),
-                Text = "Contacter l'élève"
-            };
-            ModernTheme.ApplyButtonStyle(btnContact);
-            btnContact.Click += BtnContact_Click;
-            btnContact.Enabled = false;
-            
-            btnRefresh = new Button
-            {
-                Size = new System.Drawing.Size(180, 36),
-                Location = new Point(220, 12),
-                Text = "Actualiser"
-            };
-            ModernTheme.ApplyButtonStyle(btnRefresh, false);
-            btnRefresh.Click += BtnRefresh_Click;
-            
-            btnImport = new Button
-            {
-                Size = new System.Drawing.Size(180, 36),
-                Location = new Point(420, 12),
-                Text = "Importer depuis Excel"
-            };
-            ModernTheme.ApplyButtonStyle(btnImport, false);
-            btnImport.Click += BtnImport_Click;
-            
-            // Ajout des boutons au panel
-            buttonPanel.Controls.Add(btnContact);
-            buttonPanel.Controls.Add(btnRefresh);
-            buttonPanel.Controls.Add(btnImport);
-            
-            // Ajout des contrôles au panneau de contenu
-            contentPanel.Controls.Add(lstStudents);
-            contentPanel.Controls.Add(buttonPanel);
-            
-            // Ajout des panneaux au formulaire
-            this.Controls.Add(contentPanel);
-            this.Controls.Add(headerPanel);
-            this.Controls.Add(sideMenu);
-            
-            // Titre du formulaire
-            this.Text = "Stage Manager";
-            
-            // Ajout des gestionnaires d'événements
-            lstStudents.SelectedIndexChanged += LstStudents_SelectedIndexChanged;
-        }
+
 
         /// <summary>
         /// Charge les données des étudiants depuis Firebase
@@ -236,44 +135,85 @@ namespace StageManager
         {
             try
             {
+                // Récupération de la ListView
+                ListView lstStudents = null;
+                Label lblHeader = null;
+                
+                if (Controls.Find("lstStudents", true).Length > 0)
+                    lstStudents = (ListView)Controls.Find("lstStudents", true)[0];
+                else
+                {
+                    MessageBox.Show("Le contrôle ListView 'lstStudents' est introuvable.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                
+                if (Controls.Find("lblHeader", true).Length > 0)
+                    lblHeader = (Label)Controls.Find("lblHeader", true)[0];
+                
                 lstStudents.Items.Clear();
                 this.Cursor = Cursors.WaitCursor;
 
                 // Récupération des données depuis Firebase
-                var response = await FirebaseManager.Client.GetAsync("students");
-                if (response == null || string.IsNullOrEmpty(response.Body))
-                {
-                    MessageBox.Show("Aucune donnée reçue de Firebase", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-
-                // Conversion des données JSON en objets Student
-                var data = JsonConvert.DeserializeObject<Dictionary<string, Student>>(response.Body);
+                MessageBox.Show("Tentative de connexion à Firebase...", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 
-                if (data != null)
+                try
                 {
+                    var response = await FirebaseManager.Client.GetAsync("students");
+                    
+                    if (response == null)
+                    {
+                        MessageBox.Show("La réponse de Firebase est null", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                    
+                    if (string.IsNullOrEmpty(response.Body))
+                    {
+                        MessageBox.Show("Aucune donnée reçue de Firebase (réponse vide)", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+
+                    // Affichage pour déboguer
+                    // MessageBox.Show($"Données reçues de Firebase: {response.Body.Substring(0, Math.Min(100, response.Body.Length))}...", "Débogage", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    
+                    // Conversion des données JSON en objets Student
+                    var data = JsonConvert.DeserializeObject<Dictionary<string, Student>>(response.Body);
+                    
+                    if (data == null || data.Count == 0)
+                    {
+                        MessageBox.Show("Aucun étudiant trouvé dans la base de données", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+                    
                     // Ajout de chaque étudiant dans la ListView
                     foreach (var pair in data)
                     {
                         var student = pair.Value;
                         if (student != null)
                         {
-                            var item = lstStudents.Items.Add(student.NomEtudiant ?? "");
-                            item.SubItems.Add(student.PrenomEtudiant ?? "");
-                            item.SubItems.Add(student.Classe ?? "");
-                            item.SubItems.Add(student.RaisonSociale ?? "");
-                            item.SubItems.Add(student.EmailContact ?? "");
+                            var item = lstStudents.Items.Add(student.NomEtudiant ?? "[Nom inconnu]");
+                            item.SubItems.Add(student.PrenomEtudiant ?? "[Prénom inconnu]");
+                            item.SubItems.Add(student.Classe ?? "[Classe inconnue]");
+                            item.SubItems.Add(student.RaisonSociale ?? "[Entreprise inconnue]");
+                            item.SubItems.Add(student.EmailContact ?? "[Email inconnu]");
                             item.Tag = student; // Stocke l'objet Student pour un accès facile
                         }
                     }
 
-                    lblHeader.Text = $"Liste des stages ({data.Count} élèves)";
+                    if (lblHeader != null)
+                        lblHeader.Text = $"Liste des stages ({data.Count} élèves)";
+                    
+                    MessageBox.Show($"{data.Count} étudiants chargés avec succès", "Succès", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Erreur lors de la communication avec Firebase: {ex.Message}\n\nStackTrace: {ex.StackTrace.Substring(0, Math.Min(200, ex.StackTrace.Length))}", 
+                        "Erreur Firebase", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Erreur lors du chargement des données: {ex.Message}", 
-                    "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Erreur lors du chargement des données: {ex.Message}\n\nStackTrace: {ex.StackTrace.Substring(0, Math.Min(200, ex.StackTrace.Length))}", 
+                    "Erreur générale", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -286,10 +226,37 @@ namespace StageManager
         /// </summary>
         private void BtnContact_Click(object sender, EventArgs e)
         {
+            ListView lstStudents = null;
+            
+            if (Controls.Find("lstStudents", true).Length > 0)
+                lstStudents = (ListView)Controls.Find("lstStudents", true)[0];
+            else
+            {
+                MessageBox.Show("Le contrôle ListView 'lstStudents' est introuvable.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            
             if (lstStudents.SelectedItems.Count > 0)
             {
                 var student = (Student)lstStudents.SelectedItems[0].Tag;
-                var contactForm = new ContactForm(student, currentUser);
+                
+                // Création d'un objet Stage à partir du Student pour être compatible avec ContactForm
+                var stage = new Stage
+                {
+                    NomEtudiant = student.NomEtudiant,
+                    PrenomEtudiant = student.PrenomEtudiant,
+                    Classe = student.Classe,
+                    Annee = student.Annee,
+                    Periode = student.Periode,
+                    RaisonSociale = student.RaisonSociale,
+                    Ville = student.Ville,
+                    PaysHorsFrance = student.PaysHorsFrance,
+                    EmailContact = student.EmailContact,
+                    TelephoneContact = student.TelephoneContact,
+                    PrenomContact = student.PrenomContact
+                };
+                
+                var contactForm = new ContactForm(stage, currentUser);
                 contactForm.ShowDialog();
             }
         }
@@ -300,6 +267,110 @@ namespace StageManager
         private void BtnRefresh_Click(object sender, EventArgs e)
         {
             LoadData();
+        }
+        
+        /// <summary>
+        /// Vérifie si des données existent déjà dans Firebase
+        /// </summary>
+        /// <returns>True si des données existent, False sinon</returns>
+        private async Task<bool> CheckFirebaseData()
+        {
+            try
+            {
+                var response = await FirebaseManager.Client.GetAsync("students");
+                if (response == null || string.IsNullOrEmpty(response.Body) || response.Body == "null")
+                    return false;
+                    
+                var data = JsonConvert.DeserializeObject<Dictionary<string, Student>>(response.Body);
+                return data != null && data.Count > 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Ajoute des données de test dans Firebase
+        /// </summary>
+        private async Task AddTestData()
+        {
+            try
+            {
+                MessageBox.Show("Ajout de données de test dans Firebase...", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                
+                // Créer quelques étudiants de test
+                var students = new Dictionary<string, Student>
+                {
+                    {
+                        Guid.NewGuid().ToString(),
+                        new Student
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            NomEtudiant = "Dubois",
+                            PrenomEtudiant = "Thomas",
+                            Classe = "BTS SIO 2",
+                            Annee = "2024",
+                            Periode = "Mai-Juin",
+                            RaisonSociale = "Dev-Sys",
+                            Ville = "Paris",
+                            PaysHorsFrance = false,
+                            EmailContact = "tdubois@example.com",
+                            TelephoneContact = "0123456789",
+                            PrenomContact = "Jean"
+                        }
+                    },
+                    {
+                        Guid.NewGuid().ToString(),
+                        new Student
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            NomEtudiant = "Martin",
+                            PrenomEtudiant = "Sophie",
+                            Classe = "BTS SIO 1",
+                            Annee = "2024",
+                            Periode = "Janvier-Février",
+                            RaisonSociale = "InfoTech",
+                            Ville = "Lyon",
+                            PaysHorsFrance = false,
+                            EmailContact = "smartin@example.com",
+                            TelephoneContact = "0234567890",
+                            PrenomContact = "Marie"
+                        }
+                    },
+                    {
+                        Guid.NewGuid().ToString(),
+                        new Student
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            NomEtudiant = "Lefebvre",
+                            PrenomEtudiant = "Lucas",
+                            Classe = "BTS SIO 2",
+                            Annee = "2024",
+                            Periode = "Mars-Avril",
+                            RaisonSociale = "NetVision",
+                            Ville = "Marseille",
+                            PaysHorsFrance = false,
+                            EmailContact = "llefebvre@example.com",
+                            TelephoneContact = "0345678901",
+                            PrenomContact = "Pierre"
+                        }
+                    }
+                };
+                
+                // Ajouter chaque étudiant dans Firebase
+                foreach (var pair in students)
+                {
+                    await FirebaseManager.Client.SetAsync($"students/{pair.Key}", pair.Value);
+                }
+                
+                MessageBox.Show("Données de test ajoutées avec succès !", "Succès", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Erreur lors de l'ajout des données de test : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         /// <summary>
@@ -316,7 +387,20 @@ namespace StageManager
         /// </summary>
         private void LstStudents_SelectedIndexChanged(object sender, EventArgs e)
         {
-            btnContact.Enabled = lstStudents.SelectedItems.Count > 0;
+            Button btnContact = null;
+            ListView lstStudents = sender as ListView;
+            
+            if (lstStudents == null)
+            {
+                if (Controls.Find("lstStudents", true).Length > 0)
+                    lstStudents = (ListView)Controls.Find("lstStudents", true)[0];
+            }
+            
+            if (Controls.Find("btnContact", true).Length > 0)
+                btnContact = (Button)Controls.Find("btnContact", true)[0];
+            
+            if (btnContact != null && lstStudents != null)
+                btnContact.Enabled = lstStudents.SelectedItems.Count > 0;
         }
         
         /// <summary>

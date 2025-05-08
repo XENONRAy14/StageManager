@@ -25,6 +25,8 @@ namespace StageManager
         public static Color SuccessColor = Color.FromArgb(76, 175, 80);       // Vert
         public static Color WarningColor = Color.FromArgb(255, 152, 0);       // Orange
         public static Color ErrorColor = Color.FromArgb(244, 67, 54);         // Rouge
+        public static Color DangerColor = Color.FromArgb(244, 67, 54);        // Rouge (alias pour ErrorColor)
+        public static Color InfoColor = Color.FromArgb(33, 150, 243);         // Bleu
         
         // Police par défaut
         public static Font DefaultFont = new Font("Segoe UI", 9F);

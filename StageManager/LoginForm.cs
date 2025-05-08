@@ -13,12 +13,6 @@ namespace StageManager
     /// </summary>
     public partial class LoginForm : Form
     {
-        // Déclaration des contrôles principaux du formulaire
-        private TextBox txtEmail;        // Champ de saisie pour l'email
-        private TextBox txtPassword;     // Champ de saisie pour le mot de passe
-        private Button btnLogin;         // Bouton de connexion
-        private Button btnRegister;      // Bouton pour accéder au formulaire d'inscription
-
         /// <summary>
         /// Constructeur du formulaire de connexion
         /// </summary>
@@ -26,197 +20,15 @@ namespace StageManager
         {
             // Initialise tous les composants graphiques du formulaire
             InitializeComponent();
-        }
-
-        /// <summary>
-        /// Initialise les composants de l'interface utilisateur
-        /// Cette méthode crée et configure tous les éléments visuels du formulaire
-        /// </summary>
-        private void InitializeComponent()
-        {
-            // Configuration de base du formulaire
-            this.ClientSize = new Size(800, 500);                  // Définit la taille du formulaire
-            this.StartPosition = FormStartPosition.CenterScreen;    // Centre le formulaire sur l'écran
-            this.FormBorderStyle = FormBorderStyle.FixedSingle;    // Empêche le redimensionnement
-            this.MaximizeBox = false;                              // Désactive le bouton maximiser
-            this.Text = "Stage Manager - Connexion";                // Titre de la fenêtre
-            this.BackColor = Color.White;                          // Fond blanc pour le formulaire
-
-            // Création du panel gauche (bande colorée à gauche)
-            // Ce panel contient le logo et le slogan de l'application
-            Panel leftPanel = new Panel
-            {
-                Dock = DockStyle.Left,                   // Ancré sur le côté gauche
-                Width = 400,                            // Largeur fixe de 400 pixels
-                BackColor = ModernTheme.PrimaryColor    // Couleur principale définie dans ModernTheme
+            
+            // Configuration des événements
+            this.Load += (s, e) => {
+                if (Controls.Find("btnLogin", true).Length > 0)
+                    ((Button)Controls.Find("btnLogin", true)[0]).Click += BtnLogin_Click;
+                
+                if (Controls.Find("lblRegister", true).Length > 0)
+                    ((Label)Controls.Find("lblRegister", true)[0]).Click += BtnRegister_Click;
             };
-
-            // Logo ou image sur le panel gauche
-            Label lblLogo = new Label
-            {
-                Text = "STAGE MANAGER",
-                Font = new Font("Segoe UI", 24, FontStyle.Bold),
-                ForeColor = Color.White,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Size = new Size(400, 60),
-                Location = new Point(0, 150)
-            };
-
-            // Sous-titre
-            Label lblSubtitle = new Label
-            {
-                Text = "Gérez vos stages en toute simplicité",
-                Font = new Font("Segoe UI", 12),
-                ForeColor = Color.White,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Size = new Size(400, 30),
-                Location = new Point(0, 220)
-            };
-
-            // Ajout des contrôles au panel gauche
-            leftPanel.Controls.Add(lblLogo);
-            leftPanel.Controls.Add(lblSubtitle);
-
-            // Panel droit (formulaire de connexion)
-            Panel rightPanel = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Color.White,
-                Padding = new Padding(40)
-            };
-
-            // Titre du formulaire
-            Label lblTitle = new Label
-            {
-                Text = "Connexion",
-                Font = new Font("Segoe UI", 20, FontStyle.Bold),
-                ForeColor = ModernTheme.PrimaryColor,
-                Size = new Size(300, 40),
-                Location = new Point(50, 80)
-            };
-
-            // Sous-titre du formulaire
-            Label lblFormSubtitle = new Label
-            {
-                Text = "Veuillez vous connecter pour continuer",
-                Font = new Font("Segoe UI", 10),
-                ForeColor = ModernTheme.TextLightColor,
-                Size = new Size(300, 20),
-                Location = new Point(50, 120)
-            };
-
-            // Conteneur pour les champs de saisie
-            Panel inputPanel = new Panel
-            {
-                Size = new Size(320, 250),
-                Location = new Point(40, 160),
-                BackColor = Color.White
-            };
-
-            // Champ email
-            Label lblEmail = new Label
-            {
-                Text = "Email",
-                Font = new Font("Segoe UI", 9),
-                ForeColor = ModernTheme.TextColor,
-                Size = new Size(300, 20),
-                Location = new Point(0, 0)
-            };
-
-            txtEmail = new TextBox
-            {
-                Size = new Size(320, 40),
-                Location = new Point(0, 25),
-                Text = "Email",
-                Font = ModernTheme.DefaultFont,
-                BorderStyle = BorderStyle.FixedSingle
-            };
-            txtEmail.GotFocus += (s, e) => { if (txtEmail.Text == "Email") txtEmail.Text = ""; };
-            txtEmail.LostFocus += (s, e) => { if (string.IsNullOrWhiteSpace(txtEmail.Text)) txtEmail.Text = "Email"; };
-
-            // Champ mot de passe
-            Label lblPassword = new Label
-            {
-                Text = "Mot de passe",
-                Font = new Font("Segoe UI", 9),
-                ForeColor = ModernTheme.TextColor,
-                Size = new Size(300, 20),
-                Location = new Point(0, 80)
-            };
-
-            txtPassword = new TextBox
-            {
-                Size = new Size(320, 40),
-                Location = new Point(0, 105),
-                Text = "Mot de passe",
-                Font = ModernTheme.DefaultFont,
-                BorderStyle = BorderStyle.FixedSingle,
-                PasswordChar = '\0'
-            };
-            txtPassword.GotFocus += (s, e) =>
-            {
-                if (txtPassword.Text == "Mot de passe")
-                {
-                    txtPassword.Text = "";
-                    txtPassword.PasswordChar = '•';
-                }
-            };
-            txtPassword.LostFocus += (s, e) =>
-            {
-                if (string.IsNullOrWhiteSpace(txtPassword.Text))
-                {
-                    txtPassword.Text = "Mot de passe";
-                    txtPassword.PasswordChar = '\0';
-                }
-            };
-
-            // Bouton de connexion
-            btnLogin = new Button
-            {
-                Size = new Size(320, 45),
-                Location = new Point(0, 170),
-                Text = "SE CONNECTER",
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                FlatStyle = FlatStyle.Flat,
-                FlatAppearance = { BorderSize = 0 },
-                BackColor = ModernTheme.PrimaryColor,
-                ForeColor = Color.White,
-                Cursor = Cursors.Hand
-            };
-            btnLogin.Click += BtnLogin_Click;
-
-            // Lien pour s'inscrire
-            btnRegister = new Button
-            {
-                Size = new Size(320, 30),
-                Location = new Point(0, 220),
-                Text = "Pas encore inscrit ? Créer un compte",
-                Font = new Font("Segoe UI", 9),
-                FlatStyle = FlatStyle.Flat,
-                FlatAppearance = { BorderSize = 0 },
-                BackColor = Color.Transparent,
-                ForeColor = ModernTheme.PrimaryColor,
-                Cursor = Cursors.Hand,
-                TextAlign = ContentAlignment.MiddleCenter
-            };
-            btnRegister.Click += BtnRegister_Click;
-
-            // Ajout des contrôles au panel des champs
-            inputPanel.Controls.Add(lblEmail);
-            inputPanel.Controls.Add(txtEmail);
-            inputPanel.Controls.Add(lblPassword);
-            inputPanel.Controls.Add(txtPassword);
-            inputPanel.Controls.Add(btnLogin);
-            inputPanel.Controls.Add(btnRegister);
-
-            // Ajout des contrôles au panel droit
-            rightPanel.Controls.Add(lblTitle);
-            rightPanel.Controls.Add(lblFormSubtitle);
-            rightPanel.Controls.Add(inputPanel);
-
-            // Ajout des panels au formulaire
-            this.Controls.Add(rightPanel);
-            this.Controls.Add(leftPanel);
         }
 
         /// <summary>
@@ -239,8 +51,10 @@ namespace StageManager
             try
             {
                 // Désactive les boutons et change le curseur pour indiquer le chargement
-                btnLogin.Enabled = false;
-                btnRegister.Enabled = false;
+                if (Controls.Find("btnLogin", true).Length > 0)
+                    ((Button)Controls.Find("btnLogin", true)[0]).Enabled = false;
+                if (Controls.Find("btnRegister", true).Length > 0)
+                    ((Button)Controls.Find("btnRegister", true)[0]).Enabled = false;
                 this.Cursor = Cursors.WaitCursor;
 
                 // Prépare l'email pour la recherche dans Firebase
@@ -317,8 +131,10 @@ namespace StageManager
             {
                 // Réactive les boutons et restaure le curseur normal, même en cas d'erreur
                 // Ce bloc s'exécute toujours, que la connexion réussisse ou échoue
-                btnLogin.Enabled = true;
-                btnRegister.Enabled = true;
+                if (Controls.Find("btnLogin", true).Length > 0)
+                    ((Button)Controls.Find("btnLogin", true)[0]).Enabled = true;
+                if (Controls.Find("btnRegister", true).Length > 0)
+                    ((Button)Controls.Find("btnRegister", true)[0]).Enabled = true;
                 this.Cursor = Cursors.Default;
             }
         }
